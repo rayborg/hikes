@@ -246,7 +246,7 @@
     return `<tr data-status="${trail.status}">
       <td><label class="complete-box"><input type="checkbox" data-complete="${trail.slug}" ${checked ? "checked" : ""}><span class="visually-hidden">Mark ${escapeHtml(trail.name)} completed</span></label></td>
       <td><div class="trail-name"><span class="rank">${trail.rank}</span><div><a class="detail-link" href="?trail=${trail.slug}">${escapeHtml(trail.name)}</a><small>${escapeHtml(trail.routeType)} &middot; <span class="coolness">${trail.coolness.toFixed(1)} cool</span></small></div></div></td>
-      <td><div class="highlight"><div class="thumb"><img src="${photoUrl(photo[0], 240)}" alt="${escapeHtml(photo[3])}" loading="lazy"></div><p>${escapeHtml(trail.feature)}</p></div></td>
+      <td><div class="highlight"><div class="thumb"><img src="${photoUrl(photo[0], 720)}" alt="${escapeHtml(photo[3])}" loading="lazy"></div><p>${escapeHtml(trail.feature)}</p></div></td>
       <td><div class="metric">${distanceText(trail)}<span>${escapeHtml(trail.difficulty)}</span></div></td>
       <td><div class="metric">${driveHtml(trail)}</div></td>
       <td>${statusHtml(trail)}</td>

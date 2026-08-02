@@ -135,9 +135,9 @@ tbody tr[data-status="closed"] { background: rgba(167, 68, 45, .055); }
 .rank { color: var(--moss-dark); font: italic 1.7rem var(--serif); }
 .trail-name a { color: var(--forest); font: 700 1.08rem/1.1 var(--serif); text-decoration: none; }
 .trail-name small { display: block; margin-top: .2rem; color: var(--muted); font-size: .66rem; }
-.highlight { display: grid; grid-template-columns: 84px minmax(130px, 1fr); align-items: center; gap: .75rem; max-width: 330px; }
+.highlight { display: grid; grid-template-columns: 252px minmax(130px, 1fr); align-items: center; gap: .75rem; max-width: 520px; }
 .thumb, .card-photo, .gallery-image { position: relative; overflow: hidden; background: var(--forest-dark); }
-.thumb { width: 84px; height: 62px; }
+.thumb { width: 252px; height: 186px; }
 .thumb img, .card-photo img, .gallery-image img { width: 100%; height: 100%; object-fit: cover; }
 .photo-failed img { visibility: hidden; }
 .photo-error { position: absolute; z-index: 3; inset: 0; display: grid; place-items: center; padding: .4rem; color: #d8e1dc; text-align: center; font: .68rem var(--sans); }
@@ -225,7 +225,7 @@ dialog::backdrop { background: rgba(7, 25, 21, .76); backdrop-filter: blur(3px);
   .progress-strip { grid-template-columns: auto 1fr auto; }
   .progress-strip__actions { grid-column: 1 / -1; }
   .highlight p { display: none; }
-  .highlight { grid-template-columns: 84px; }
+  .highlight { grid-template-columns: 252px; }
 }
 
 @media (max-width: 760px) {
