@@ -240,7 +240,7 @@
   }
 
   function statusHtml(trail, extraClass = "") {
-    return `<span class="status-badge status-${trail.status} ${extraClass}">${escapeHtml(trail.statusLabel)}</span>`;
+    return `<span class="status-badge status-${trail.status} ${extraClass}"><span class="status-badge__text">${escapeHtml(trail.statusLabel)}</span></span>`;
   }
 
   function formatStatusDate(value, long = false) {
