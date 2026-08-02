@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Plan and track eleven waterfall hikes in Great Smoky Mountains National Park.">
+  <meta name="theme-color" content="#173f35">
+  <title>Falling Water Field Notes | Smokies Trail Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#trail-list">Skip to trail list</a>
+  <header class="masthead">
+    <div class="masthead__inner">
+      <p class="eyebrow">Great Smoky Mountains National Park</p>
+      <h1>Falling Water<br><em>Field Notes</em></h1>
+      <p class="dek">Eleven waterfall walks, ranked and ready for the road. Plan carefully, keep a local field log, and always confirm park conditions before departure.</p>
+      <div class="masthead__meta">
+        <span>35.6&deg; N / Southern Appalachians</span>
+        <span>Conditions reviewed <time datetime="2026-07-31">July 31, 2026</time></span>
+      </div>
+      <a class="masthead__credit" href="https://commons.wikimedia.org/wiki/File:Ramsey%20Cascades%2C%20July%202015--Andrea%20Walton%20%2839409902424%29.jpg" target="_blank" rel="noopener noreferrer">Background: Ramsey Cascades, Great Smoky Mountains National Park/NPS, public domain, via Wikimedia Commons</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="safety" aria-labelledby="safety-title">
+      <div class="safety__mark" aria-hidden="true">!</div>
+      <div>
+        <p class="eyebrow">Before the trail</p>
+        <h2 id="safety-title">Waterfalls reward caution.</h2>
+        <p>Check <a href="https://www.nps.gov/grsm/planyourvisit/temproadclose.htm" target="_blank" rel="noopener noreferrer">current NPS closures and warnings</a>. A <a href="https://www.nps.gov/grsm/planyourvisit/fees.htm" target="_blank" rel="noopener noreferrer">parking tag is required</a>. Never swim or climb near waterfalls: slick rock, cold water, and strong currents can be fatal. Drive estimates have no live traffic and are not guarantees. GPS is not a substitute for maps or awareness.</p>
+      </div>
+    </section>
+
+    <section class="planner" aria-labelledby="planner-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Your trail ledger</p>
+          <h2 id="planner-title">Plan the next outing</h2>
+        </div>
+        <p id="result-count" class="result-count" aria-live="polite"></p>
+      </div>
+
+      <div class="origin-panel">
+        <div class="origin-panel__copy">
+          <span class="pin" aria-hidden="true"></span>
+          <div>
+            <p class="origin-panel__label">Driving from</p>
+            <strong id="origin-label">Home origin near Knoxville</strong>
+            <p id="route-note" role="status" aria-live="polite" aria-atomic="true">Seeded estimates are visible now. Updating with OpenStreetMap/OSRM routing&hellip;</p>
+          </div>
+        </div>
+        <div class="origin-panel__actions">
+          <button class="button button--quiet" id="location-button" type="button">Change origin</button>
+          <button class="button button--quiet" id="refresh-routes" type="button">Refresh routes</button>
+        </div>
+      </div>
+
+      <form id="filters" class="filters" aria-label="Filter and sort trails">
+        <label class="filter filter--search">
+          <span>Search trails</span>
+          <input id="search" name="q" type="search" placeholder="Waterfall, area, feature&hellip;">
+        </label>
+        <label class="filter">
+          <span>Max drive</span>
+          <select id="max-drive" name="drive">
+            <option value="">Any time</option><option value="60">60 min</option><option value="75">75 min</option><option value="90">90 min</option><option value="120">2 hours</option>
+          </select>
+        </label>
+        <label class="filter">
+          <span>Max hike</span>
+          <select id="max-hike" name="hike">
+            <option value="">Any length</option><option value="2">2 miles</option><option value="3">3 miles</option><option value="5">5 miles</option><option value="6">6 miles</option>
+          </select>
+        </label>
+        <label class="filter">
+          <span>Difficulty</span>
+          <select id="difficulty" name="diff">
+            <option value="">Any level</option><option value="1">Easy</option><option value="2">Easy-moderate</option><option value="3">Moderate</option><option value="4">Moderate-strenuous</option><option value="5">Strenuous</option>
+          </select>
+        </label>
+        <label class="filter">
+          <span>Min. coolness</span>
+          <select id="min-coolness" name="cool">
+            <option value="">Any score</option><option value="7">7+</option><option value="8">8+</option><option value="9">9+</option>
+          </select>
+        </label>
+        <label class="filter">
+          <span>Completion</span>
+          <select id="completed-filter" name="done">
+            <option value="">All hikes</option><option value="no">Not completed</option><option value="yes">Completed</option>
+          </select>
+        </label>
+        <label class="filter">
+          <span>Sort by</span>
+          <select id="sort" name="sort">
+            <option value="rank">Field rank</option><option value="coolness">Coolness</option><option value="nearest">Nearest drive</option><option value="drive">Shortest drive</option><option value="hike">Shortest hike</option><option value="easy">Easiest</option>
+          </select>
+        </label>
+        <label class="check-filter"><input id="open-only" name="open" type="checkbox"> <span>Open only</span></label>
+        <button class="text-button" id="clear-filters" type="button">Clear filters</button>
+      </form>
+
+      <aside class="progress-strip" aria-labelledby="progress-title">
+        <div>
+          <p id="progress-title" class="progress-strip__title">Field log progress</p>
+          <p><strong id="progress-count">0 of 11</strong> explored</p>
+        </div>
+        <div class="progress-meter" aria-hidden="true"><span id="progress-bar"></span></div>
+        <dl>
+          <div><dt>Complete</dt><dd id="progress-percent">0%</dd></div>
+          <div><dt>Trail miles</dt><dd id="progress-miles">0.0</dd></div>
+          <div><dt>Feet climbed</dt><dd id="progress-elevation">0</dd></div>
+        </dl>
+        <div class="progress-strip__actions">
+          <button id="export-json" class="text-button" type="button">Export JSON</button>
+          <button id="export-csv" class="text-button" type="button">Export CSV</button>
+          <button id="import-button" class="text-button" type="button">Import JSON</button>
+          <input id="import-file" class="visually-hidden" type="file" accept="application/json,.json">
+        </div>
+        <p id="import-status" class="form-status" aria-live="polite"></p>
+      </aside>
+
+      <div id="trail-list" tabindex="-1">
+        <div class="table-wrap">
+          <table>
+            <caption class="visually-hidden">Smokies waterfall hikes with trail, driving, status, and planning details</caption>
+            <thead><tr>
+              <th scope="col"><span class="visually-hidden">Completed</span></th>
+              <th scope="col">Rank / trail</th>
+              <th scope="col">Highlight</th>
+              <th scope="col">Hike</th>
+              <th scope="col">Drive estimate</th>
+              <th scope="col">Status</th>
+              <th scope="col">Plan</th>
+              <th scope="col">Updated</th>
+            </tr></thead>
+            <tbody id="trail-rows"></tbody>
+          </table>
+        </div>
+        <div id="trail-cards" class="trail-cards"></div>
+        <div id="empty-state" class="empty-state" hidden>
+          <p class="eyebrow">No trail found</p>
+          <h3>Try opening the view a little wider.</h3>
+          <p>Clear one or more filters to return trails to the ledger.</p>
+          <button id="empty-clear" class="button" type="button">Clear filters</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="sources" aria-labelledby="sources-title">
+      <p class="eyebrow">Carry good information</p>
+      <h2 id="sources-title">Official park desk</h2>
+      <div class="source-grid">
+        <a href="https://www.nps.gov/grsm/planyourvisit/temproadclose.htm" target="_blank" rel="noopener noreferrer"><strong>Roads &amp; trail status</strong><span>Temporary closures, warnings, seasonal access</span></a>
+        <a href="https://www.nps.gov/grsm/planyourvisit/waterfalls.htm" target="_blank" rel="noopener noreferrer"><strong>NPS waterfall guide</strong><span>Park guidance for waterfall visits</span></a>
+        <a href="https://www.nps.gov/grsm/planyourvisit/maps.htm" target="_blank" rel="noopener noreferrer"><strong>Official maps</strong><span>Download before leaving coverage</span></a>
+        <a href="https://www.nps.gov/grsm/planyourvisit/fees.htm" target="_blank" rel="noopener noreferrer"><strong>Parking tags</strong><span>Requirements and purchase information</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Made as a local-first field guide. Completion data stays in this browser.</p>
+    <p>Drive data &copy; OpenStreetMap contributors, estimated through OSRM. No live traffic.</p>
+  </footer>
+
+  <dialog id="location-dialog" class="small-dialog" aria-labelledby="location-title">
+    <form class="dialog-shell" id="location-form">
+      <button class="dialog-close" data-close-location type="button" aria-label="Close location settings">&times;</button>
+      <p class="eyebrow">Private by design</p>
+      <h2 id="location-title">Choose a starting point</h2>
+      <p>The default is <strong>35.960, -83.920</strong>. Location access occurs only after you ask. Coordinates are rounded to three decimals before display, storage, or routing; precise GPS history is never kept.</p>
+      <button id="use-gps" class="button" type="button">Use my current location</button>
+      <div class="coordinate-fields">
+        <label><span>Latitude</span><input id="latitude" type="number" min="-90" max="90" step="0.001" required></label>
+        <label><span>Longitude</span><input id="longitude" type="number" min="-180" max="180" step="0.001" required></label>
+      </div>
+      <p id="location-status" class="form-status" aria-live="polite"></p>
+      <div class="dialog-actions">
+        <button id="save-location" class="button" type="submit">Use coordinates</button>
+        <button id="reset-location" class="button button--quiet" type="button">Reset to home</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="trail-dialog" class="trail-dialog" aria-labelledby="detail-title">
+    <div id="detail-content"></div>
+  </dialog>
+</body>
+</html>
