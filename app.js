@@ -9,6 +9,7 @@
   const routeCachePrefix = "smokies-hikes-routes-v1:";
   const sixHours = 6 * 60 * 60 * 1000;
   const externalRel = 'target="_blank" rel="noopener noreferrer"';
+  const datasetSignature = trails.map((trail) => `${trail.slug}:${trail.rank}:${trail.lat}:${trail.lon}`).join("|").split("").reduce((hash, character) => ((hash * 31) + character.charCodeAt(0)) >>> 0, 0).toString(36);
 
   const elements = {
     form: document.querySelector("#filters"),
@@ -16,6 +17,8 @@
     maxDrive: document.querySelector("#max-drive"),
     maxHike: document.querySelector("#max-hike"),
     difficulty: document.querySelector("#difficulty"),
+    region: document.querySelector("#region"),
+    feature: document.querySelector("#feature"),
     minCoolness: document.querySelector("#min-coolness"),
     done: document.querySelector("#completed-filter"),
     sort: document.querySelector("#sort"),
@@ -98,13 +101,18 @@
 
   function validateRouteCache(cache, now = Date.now()) {
     if (!cache || typeof cache !== "object" || Array.isArray(cache)) return null;
+    if (cache.datasetSignature !== datasetSignature) return null;
     if (!Number.isFinite(cache.savedAt) || cache.savedAt < 0 || cache.savedAt > now || now - cache.savedAt > sixHours) return null;
     if (!cache.routes || typeof cache.routes !== "object" || Array.isArray(cache.routes)) return null;
     const validated = {};
     for (const trail of trails) {
       if (!Object.prototype.hasOwnProperty.call(cache.routes, trail.slug)) return null;
       const route = cache.routes[trail.slug];
-      if (!route || typeof route !== "object" || Array.isArray(route)) return null;
+      if (route === null) {
+        validated[trail.slug] = null;
+        continue;
+      }
+      if (typeof route !== "object" || Array.isArray(route)) return null;
       if (!Number.isFinite(route.miles) || route.miles < 0 || !Number.isFinite(route.minutes) || route.minutes < 0) return null;
       validated[trail.slug] = { miles: route.miles, minutes: route.minutes, source: "cache" };
     }
@@ -161,6 +169,8 @@
       drive: elements.maxDrive.value,
       hike: elements.maxHike.value,
       diff: elements.difficulty.value,
+      region: elements.region.value,
+      feature: elements.feature.value,
       cool: elements.minCoolness.value,
       done: elements.done.value,
       sort: elements.sort.value,
@@ -170,20 +180,25 @@
 
   function applyUrlState() {
     const params = new URLSearchParams(location.search);
+    const setSelect = (element, value, fallback = "") => {
+      element.value = [...element.options].some((option) => option.value === value) ? value : fallback;
+    };
     elements.search.value = params.get("q") || "";
-    elements.maxDrive.value = params.get("drive") || "";
-    elements.maxHike.value = params.get("hike") || "";
-    elements.difficulty.value = params.get("diff") || "";
-    elements.minCoolness.value = params.get("cool") || "";
-    elements.done.value = params.get("done") || "";
-    elements.sort.value = params.get("sort") || "rank";
+    setSelect(elements.maxDrive, params.get("drive") || "");
+    setSelect(elements.maxHike, params.get("hike") || "");
+    setSelect(elements.difficulty, params.get("diff") || "");
+    setSelect(elements.region, params.get("region") || "");
+    setSelect(elements.feature, params.get("feature") || "");
+    setSelect(elements.minCoolness, params.get("cool") || "");
+    setSelect(elements.done, params.get("done") || "");
+    setSelect(elements.sort, params.get("sort") || "rank", "rank");
     elements.openOnly.checked = params.get("open") === "1";
   }
 
   function updateUrl() {
     const state = currentState();
     const params = new URLSearchParams(location.search);
-    ["q", "drive", "hike", "diff", "cool", "done", "sort", "open"].forEach((key) => params.delete(key));
+    ["q", "drive", "hike", "diff", "region", "feature", "cool", "done", "sort", "open"].forEach((key) => params.delete(key));
     Object.entries(state).forEach(([key, value]) => {
       if (key === "open" && value) params.set(key, "1");
       else if (key === "sort" && value !== "rank") params.set(key, value);
@@ -198,12 +213,14 @@
     const query = state.q.toLowerCase();
     const result = trails.filter((trail) => {
       const route = routes[trail.slug];
-      const searchable = `${trail.name} ${trail.feature} ${trail.parking} ${trail.difficulty}`.toLowerCase();
+      const searchable = `${trail.name} ${trail.feature} ${trail.parking} ${trail.difficulty} ${trail.landManager} ${config.regions[trail.region]} ${trail.features.map((feature) => config.features[feature]).join(" ")}`.toLowerCase();
       const currentHikeMiles = trail.currentMiles || trail.miles;
       if (query && !searchable.includes(query)) return false;
       if (state.drive && (!route || route.minutes > Number(state.drive))) return false;
       if (state.hike && currentHikeMiles > Number(state.hike)) return false;
       if (state.diff && trail.difficultyOrder !== Number(state.diff)) return false;
+      if (state.region && trail.region !== state.region) return false;
+      if (state.feature && !trail.features.includes(state.feature)) return false;
       if (state.cool && trail.coolness < Number(state.cool)) return false;
       if (state.open && trail.status === "closed") return false;
       if (state.done === "yes" && !completed.has(trail.slug)) return false;
@@ -226,6 +243,21 @@
     return `<span class="status-badge status-${trail.status} ${extraClass}">${escapeHtml(trail.statusLabel)}</span>`;
   }
 
+  function formatStatusDate(value, long = false) {
+    return new Intl.DateTimeFormat("en-US", { year: "numeric", month: long ? "long" : "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
+  }
+
+  function taxonomyHtml(trail) {
+    return `<span class="region-label">${escapeHtml(config.regions[trail.region])}</span><span class="feature-list">${trail.features.map((feature) => escapeHtml(config.features[feature])).join(" &middot; ")}</span>`;
+  }
+
+  function safetyText(trail) {
+    const reminders = ["Stay on the official route and respect posted closures."];
+    if (trail.features.some((feature) => ["waterfall", "gorge", "lake"].includes(feature))) reminders.push("Keep back from moving water, slick rock, and flood-prone crossings.");
+    if (trail.features.some((feature) => ["overlook", "summit", "rock-formation", "arch"].includes(feature))) reminders.push("Keep back from exposed edges and unstable rock.");
+    return reminders.join(" ");
+  }
+
   function distanceText(trail) {
     if (trail.currentMiles) {
       return `<strong>~${trail.currentMiles.toFixed(1)} mi now</strong><span>${trail.miles.toFixed(1)} mi base &middot; ${trail.elevation.toLocaleString()} ft gain</span>`;
@@ -245,13 +277,13 @@
     const checked = completed.has(trail.slug);
     return `<tr data-status="${trail.status}">
       <td><label class="complete-box"><input type="checkbox" data-complete="${trail.slug}" ${checked ? "checked" : ""}><span class="visually-hidden">Mark ${escapeHtml(trail.name)} completed</span></label></td>
-      <td><div class="trail-name"><span class="rank">${trail.rank}</span><div><a class="detail-link" href="?trail=${trail.slug}">${escapeHtml(trail.name)}</a><small>${escapeHtml(trail.routeType)} &middot; <span class="coolness">${trail.coolness.toFixed(1)} cool</span></small></div></div></td>
+      <td><div class="trail-name"><span class="rank">${trail.rank}</span><div><a class="detail-link" href="?trail=${trail.slug}">${escapeHtml(trail.name)}</a><small>${escapeHtml(trail.routeType)} &middot; <span class="coolness">${trail.coolness.toFixed(1)} cool</span></small><small class="taxonomy">${taxonomyHtml(trail)}</small></div></div></td>
       <td><div class="highlight"><div class="thumb"><img src="${photoUrl(photo[0], 720)}" alt="${escapeHtml(photo[3])}" loading="lazy"></div><p>${escapeHtml(trail.feature)}</p></div></td>
       <td><div class="metric">${distanceText(trail)}<span>${escapeHtml(trail.difficulty)}</span></div></td>
       <td><div class="metric">${driveHtml(trail)}</div></td>
       <td>${statusHtml(trail)}</td>
       <td><div class="plan-links"><a class="detail-link" href="?trail=${trail.slug}">Details</a><a href="${overviewMapUrl(trail)}" ${externalRel}>Map</a><a href="${trail.youtube}" ${externalRel} aria-label="YouTube search for ${escapeHtml(trail.name)}">YouTube search</a></div></td>
-      <td class="updated"><time datetime="${config.statusUpdated}">Jul 31, 2026</time></td>
+      <td class="updated"><time datetime="${trail.statusUpdated}">${formatStatusDate(trail.statusUpdated)}</time></td>
     </tr>`;
   }
 
@@ -264,8 +296,8 @@
       <div class="card-photo"><img src="${photoUrl(photo[0], 800)}" alt="${escapeHtml(photo[3])}" loading="lazy"><span class="card-rank">#${trail.rank}</span>${statusHtml(trail, "card-status")}</div>
       <div class="card-body">
         <div class="card-title-row"><h3><a class="detail-link" href="?trail=${trail.slug}">${escapeHtml(trail.name)}</a></h3><label class="complete-box"><input type="checkbox" data-complete="${trail.slug}" ${checked ? "checked" : ""}><span class="visually-hidden">Mark ${escapeHtml(trail.name)} completed</span></label></div>
-        <p class="card-copy">${escapeHtml(trail.feature)}</p>
-        <div class="card-metrics"><div><span>Hike distance</span><strong>${hikeMiles} mi</strong></div><div><span>Elevation</span><strong>${trail.elevation.toLocaleString()} ft</strong></div><div><span>Drive estimate</span><strong>${route ? `${Math.round(route.minutes)} min` : "Unavailable"}</strong></div><div><span>Difficulty</span><strong>${escapeHtml(trail.difficulty)}</strong></div><div><span>Coolness</span><strong>${trail.coolness.toFixed(1)} / 10</strong></div><div><span>Updated</span><strong>Jul 31, 2026</strong></div></div>
+        <p class="card-taxonomy taxonomy">${taxonomyHtml(trail)}</p><p class="card-copy">${escapeHtml(trail.feature)}</p>
+        <div class="card-metrics"><div><span>Hike distance</span><strong>${hikeMiles} mi</strong></div><div><span>Elevation</span><strong>${trail.elevation.toLocaleString()} ft</strong></div><div><span>Drive estimate</span><strong>${route ? `${Math.round(route.minutes)} min` : "Unavailable"}</strong></div><div><span>Difficulty</span><strong>${escapeHtml(trail.difficulty)}</strong></div><div><span>Coolness</span><strong>${trail.coolness.toFixed(1)} / 10</strong></div><div><span>Updated</span><strong>${formatStatusDate(trail.statusUpdated)}</strong></div></div>
         <details class="card-advisory"><summary>Current access note</summary><p>${escapeHtml(trail.advisory)}</p></details>
         <div class="card-footer"><a class="detail-link" href="?trail=${trail.slug}">Field notes</a><a href="${overviewMapUrl(trail)}" ${externalRel}>Map</a><a href="${trail.youtube}" ${externalRel}>YouTube search</a></div>
       </div>
@@ -331,7 +363,7 @@
     return trails.filter((candidate) => candidate.slug !== trail.slug).map((candidate) => ({
       trail: candidate,
       distance: Math.hypot(candidate.lat - trail.lat, candidate.lon - trail.lon)
-    })).sort((a, b) => a.distance - b.distance).slice(0, 2).map((item) => item.trail);
+    })).sort((a, b) => (a.trail.region === trail.region ? 0 : 1) - (b.trail.region === trail.region ? 0 : 1) || a.distance - b.distance).slice(0, 2).map((item) => item.trail);
   }
 
   function detailHtml(trail) {
@@ -344,23 +376,23 @@
       <button class="dialog-close" data-close-detail type="button" aria-label="Close ${escapeHtml(trail.name)} details">&times;</button>
       <header class="detail-hero">
         <div class="detail-hero__photo"><img src="${photoUrl(firstPhoto[0], 1200)}" alt="${escapeHtml(firstPhoto[3])}"></div>
-        <div class="detail-hero__copy"><p class="eyebrow">Field rank ${trail.rank} &middot; ${escapeHtml(trail.routeType)}</p><h2 id="detail-title">${escapeHtml(trail.name)}</h2><p>${escapeHtml(trail.feature)}</p></div>
+        <div class="detail-hero__copy"><p class="eyebrow">Field rank ${trail.rank} &middot; ${escapeHtml(trail.routeType)}</p><h2 id="detail-title">${escapeHtml(trail.name)}</h2><p>${escapeHtml(trail.feature)}</p><p class="detail-taxonomy taxonomy">${taxonomyHtml(trail)}</p></div>
       </header>
       <div class="detail-body">
-        <section class="detail-alert ${trail.status}" aria-label="Current trail status"><strong>${escapeHtml(trail.statusLabel)}</strong><p>${escapeHtml(trail.advisory)}</p><small>Reviewed <time datetime="${config.statusUpdated}">July 31, 2026</time> &middot; <a href="${config.statusSource}" ${externalRel}>Verify current NPS status</a></small></section>
+        <section class="detail-alert ${trail.status}" aria-label="Current trail status"><strong>${escapeHtml(trail.statusLabel)}</strong><p>${escapeHtml(trail.advisory)}</p><small>Reviewed <time datetime="${trail.statusUpdated}">${formatStatusDate(trail.statusUpdated, true)}</time> &middot; <a href="${trail.statusSource}" ${externalRel}>Verify current status</a></small></section>
         <dl class="detail-stats">
           <div><dt>Hike distance</dt><dd>${trail.currentMiles ? `~${trail.currentMiles.toFixed(1)} mi now` : `${trail.miles.toFixed(1)} mi`}</dd></div>
-          <div><dt>Elevation gain</dt><dd>${trail.elevation.toLocaleString()} ft</dd></div>
+          <div><dt>Elevation gain</dt><dd>${trail.elevation.toLocaleString()} ft<small>${escapeHtml(trail.elevationNote)}</small></dd></div>
           <div><dt>Difficulty</dt><dd>${escapeHtml(trail.difficulty)}</dd></div>
           <div><dt>Coolness</dt><dd>${trail.coolness.toFixed(1)} / 10</dd></div>
           <div><dt>Drive estimate</dt><dd>${route ? `${route.miles.toFixed(1)} mi / ${Math.round(route.minutes)} min` : "Unavailable"}</dd></div>
         </dl>
         <div class="detail-grid">
-          <section><h3>Trailhead &amp; access</h3><p><strong>${escapeHtml(trail.parking)}</strong><br>${trail.lat.toFixed(7)}, ${trail.lon.toFixed(7)}</p><p>${escapeHtml(trail.access)}</p><div class="detail-actions"><label class="button"><input class="visually-hidden" type="checkbox" data-complete="${trail.slug}" ${checked ? "checked" : ""}>${checked ? "Completed: yes" : "Mark completed"}</label><a class="button button--quiet" href="${trail.youtube}" ${externalRel}>YouTube search</a></div><p><small>The YouTube link opens search results, not a curated or direct video.</small></p></section>
-          <section><h3>Parking map</h3><iframe class="detail-map" loading="lazy" title="OpenStreetMap at ${escapeHtml(trail.parking)}" src="${trailMapUrl(trail)}"></iframe><div class="nav-links"><a href="${nav.google}" ${externalRel}>Google directions</a><a href="${nav.apple}" ${externalRel}>Apple directions</a><a href="${nav.osm}" ${externalRel}>OSM directions</a><a href="${config.mapsSource}" ${externalRel}>NPS maps</a></div></section>
+          <section><h3>Trailhead &amp; access</h3><p><strong>${escapeHtml(trail.parking)}</strong><br>${trail.lat.toFixed(7)}, ${trail.lon.toFixed(7)}</p><p>${escapeHtml(trail.access)}</p><p><strong>Land manager:</strong> ${escapeHtml(trail.landManager)}</p><div class="detail-actions"><label class="button"><input class="visually-hidden" type="checkbox" data-complete="${trail.slug}" ${checked ? "checked" : ""}>${checked ? "Completed: yes" : "Mark completed"}</label><a class="button button--quiet" href="${trail.youtube}" ${externalRel}>YouTube search</a></div><p><small>The YouTube link opens search results, not a curated or direct video.</small></p></section>
+          <section><h3>Parking map</h3><iframe class="detail-map" loading="lazy" title="OpenStreetMap at ${escapeHtml(trail.parking)}" src="${trailMapUrl(trail)}"></iframe><div class="nav-links"><a href="${nav.google}" ${externalRel}>Google directions</a><a href="${nav.apple}" ${externalRel}>Apple directions</a><a href="${nav.osm}" ${externalRel}>OSM directions</a><a href="${trail.mapSource}" ${externalRel}>Official map</a></div><p class="source-links"><a href="${trail.officialSource}" ${externalRel}>${escapeHtml(trail.officialSourceLabel || "Official trail information")}</a> &middot; <a href="${trail.feeSource}" ${externalRel}>Fees and parking</a></p></section>
         </div>
-        <section class="gallery" aria-labelledby="gallery-title"><h3 id="gallery-title">Waterfall study</h3><div class="gallery-grid">${trail.photos.map((photo) => `<figure><div class="gallery-image"><img src="${photoUrl(photo[0], 1000)}" alt="${escapeHtml(photo[3])}" loading="lazy"></div><figcaption>${escapeHtml(photo[3])}. <a href="${photoSource(photo[0])}" ${externalRel}>${escapeHtml(photo[1])}</a>, ${escapeHtml(photo[2])}, via Wikimedia Commons.</figcaption></figure>`).join("")}</div></section>
-        <aside class="detail-reminders"><p><strong>Take care:</strong> parking tags are required for vehicles parked longer than 15 minutes. Never swim or climb near falls. Download an <a href="${config.mapsSource}" ${externalRel}>official map</a>, check <a href="${config.statusSource}" ${externalRel}>current conditions</a>, and treat all route times as estimates without live traffic.</p><p>Driving data &copy; OpenStreetMap contributors, routed through OSRM. ${route?.source === "seeded" ? "Currently showing the fixed-home fallback." : ""}</p></aside>
+        <section class="gallery" aria-labelledby="gallery-title"><h3 id="gallery-title">Photo notes</h3><div class="gallery-grid">${trail.photos.map((photo) => `<figure><div class="gallery-image"><img src="${photoUrl(photo[0], 1000)}" alt="${escapeHtml(photo[3])}" loading="lazy"></div><figcaption>${escapeHtml(photo[3])} <a href="${photoSource(photo[0])}" ${externalRel}>${escapeHtml(photo[1])}</a>, ${escapeHtml(photo[2])}, via Wikimedia Commons.</figcaption></figure>`).join("")}</div></section>
+        <aside class="detail-reminders"><p><strong>Take care:</strong> ${escapeHtml(safetyText(trail))} Download the <a href="${trail.mapSource}" ${externalRel}>official map</a>, and check <a href="${trail.statusSource}" ${externalRel}>current conditions</a>.</p><p><strong>Fee note:</strong> ${escapeHtml(trail.feeNote)} <a href="${trail.feeSource}" ${externalRel}>Verify current fees and parking rules.</a></p><p>Driving data &copy; OpenStreetMap contributors, routed through OSRM. Times are estimates without live traffic. ${route?.source === "seeded" ? "Currently showing the fixed-home fallback." : ""}</p></aside>
         <nav class="similar" aria-label="Similar nearby trails"><h3>Nearby in this field guide</h3>${similar.map((item) => `<a class="detail-link" href="${detailUrl(item.slug)}">${escapeHtml(item.name)}</a>`).join("")}</nav>
       </div>
     </article>`;
@@ -409,7 +441,6 @@
       pendingFocusRestore = true;
       suppressDialogClose = true;
       elements.detailDialog.close();
-      suppressDialogClose = false;
       activeDetailSlug = null;
     }
   }
@@ -445,7 +476,7 @@
   }
 
   function routeCacheKey() {
-    return `${routeCachePrefix}${origin.lat.toFixed(3)},${origin.lon.toFixed(3)}`;
+    return `${routeCachePrefix}${datasetSignature}:${origin.lat.toFixed(3)},${origin.lon.toFixed(3)}`;
   }
 
   async function calculateRoutes(force = false) {
@@ -482,7 +513,7 @@
       });
       routes = calculated;
       const cacheRoutes = Object.fromEntries(Object.entries(calculated).map(([slug, route]) => [slug, route ? { miles: route.miles, minutes: route.minutes } : null]));
-      const cachePayload = { savedAt: Date.now(), origin: { lat: origin.lat, lon: origin.lon }, routes: cacheRoutes };
+      const cachePayload = { savedAt: Date.now(), datasetSignature, origin: { lat: origin.lat, lon: origin.lon }, routes: cacheRoutes };
       if (validateRouteCache(cachePayload)) {
         try {
           localStorage.setItem(cacheKey, JSON.stringify(cachePayload));
@@ -617,7 +648,10 @@
   });
 
   elements.detailDialog.addEventListener("close", () => {
-    if (suppressDialogClose) return;
+    if (suppressDialogClose) {
+      suppressDialogClose = false;
+      return;
+    }
     activeDetailSlug = null;
     pendingFocusRestore = true;
     const hasTrail = new URLSearchParams(location.search).has("trail");

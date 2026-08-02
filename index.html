@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Plan and track eleven waterfall hikes in Great Smoky Mountains National Park.">
+  <meta name="description" content="Plan and track 23 mixed-feature hikes across the Southern Appalachians.">
   <meta name="theme-color" content="#173f35">
-  <title>Falling Water Field Notes | Smokies Trail Tracker</title>
+  <title>Highland Field Notes | Southern Appalachian Trail Tracker</title>
   <link rel="stylesheet" href="styles.css">
   <script src="data.js" defer></script>
   <script src="app.js" defer></script>
@@ -14,12 +14,12 @@
   <a class="skip-link" href="#trail-list">Skip to trail list</a>
   <header class="masthead">
     <div class="masthead__inner">
-      <p class="eyebrow">Great Smoky Mountains National Park</p>
-      <h1>Falling Water<br><em>Field Notes</em></h1>
-      <p class="dek">Eleven waterfall walks, ranked and ready for the road. Plan carefully, keep a local field log, and always confirm park conditions before departure.</p>
+      <p class="eyebrow">Southern Appalachian day hikes</p>
+      <h1>Highland<br><em>Field Notes</em></h1>
+      <p class="dek">Twenty-three waterfalls, overlooks, summits, arches, gorges, and historic landscapes, ranked and ready for the road. Plan carefully and confirm destination conditions before departure.</p>
       <div class="masthead__meta">
         <span>35.6&deg; N / Southern Appalachians</span>
-        <span>Conditions reviewed <time datetime="2026-07-31">July 31, 2026</time></span>
+        <span>Status review dates shown per trail</span>
       </div>
       <a class="masthead__credit" href="https://commons.wikimedia.org/wiki/File:Ramsey%20Cascades%2C%20July%202015--Andrea%20Walton%20%2839409902424%29.jpg" target="_blank" rel="noopener noreferrer">Background: Ramsey Cascades, Great Smoky Mountains National Park/NPS, public domain, via Wikimedia Commons</a>
     </div>
@@ -30,8 +30,8 @@
       <div class="safety__mark" aria-hidden="true">!</div>
       <div>
         <p class="eyebrow">Before the trail</p>
-        <h2 id="safety-title">Waterfalls reward caution.</h2>
-        <p>Check <a href="https://www.nps.gov/grsm/planyourvisit/temproadclose.htm" target="_blank" rel="noopener noreferrer">current NPS closures and warnings</a>. A <a href="https://www.nps.gov/grsm/planyourvisit/fees.htm" target="_blank" rel="noopener noreferrer">parking tag is required</a>. Never swim or climb near waterfalls: slick rock, cold water, and strong currents can be fatal. Drive estimates have no live traffic and are not guarantees. GPS is not a substitute for maps or awareness.</p>
+        <h2 id="safety-title">Every landscape asks for care.</h2>
+        <p>Open each trail's details to check its land manager, official status, map, access, and fee guidance. Stay back from cliff edges and moving water, respect closures and daylight limits, and carry a downloaded map. Drive estimates have no live traffic and are not guarantees. GPS is not a substitute for maps or awareness.</p>
       </div>
     </section>
 
@@ -62,12 +62,12 @@
       <form id="filters" class="filters" aria-label="Filter and sort trails">
         <label class="filter filter--search">
           <span>Search trails</span>
-          <input id="search" name="q" type="search" placeholder="Waterfall, area, feature&hellip;">
+          <input id="search" name="q" type="search" placeholder="Trail, region, manager, feature&hellip;">
         </label>
         <label class="filter">
           <span>Max drive</span>
           <select id="max-drive" name="drive">
-            <option value="">Any time</option><option value="60">60 min</option><option value="75">75 min</option><option value="90">90 min</option><option value="120">2 hours</option>
+            <option value="">Any time</option><option value="60">60 min</option><option value="75">75 min</option><option value="90">90 min</option><option value="120">2 hours</option><option value="180">3 hours</option>
           </select>
         </label>
         <label class="filter">
@@ -80,6 +80,18 @@
           <span>Difficulty</span>
           <select id="difficulty" name="diff">
             <option value="">Any level</option><option value="1">Easy</option><option value="2">Easy-moderate</option><option value="3">Moderate</option><option value="4">Moderate-strenuous</option><option value="5">Strenuous</option>
+          </select>
+        </label>
+        <label class="filter filter--region">
+          <span>Region</span>
+          <select id="region" name="region">
+            <option value="">Any region</option><option value="smokies">Great Smoky Mountains</option><option value="knoxville">Knoxville Area</option><option value="cumberland-trail">Cumberland Trail</option><option value="big-south-fork">Big South Fork</option><option value="cumberland-plateau">Cumberland Plateau</option><option value="obed">Obed Wild and Scenic River</option><option value="pisgah">Pisgah National Forest</option>
+          </select>
+        </label>
+        <label class="filter">
+          <span>Feature</span>
+          <select id="feature" name="feature">
+            <option value="">Any feature</option><option value="waterfall">Waterfall</option><option value="overlook">Overlook</option><option value="summit">Summit</option><option value="arch">Natural arch</option><option value="gorge">Gorge</option><option value="lake">Lake</option><option value="historic">Historic site</option><option value="rock-formation">Rock formation</option>
           </select>
         </label>
         <label class="filter">
@@ -107,7 +119,7 @@
       <aside class="progress-strip" aria-labelledby="progress-title">
         <div>
           <p id="progress-title" class="progress-strip__title">Field log progress</p>
-          <p><strong id="progress-count">0 of 11</strong> explored</p>
+          <p><strong id="progress-count">0 of --</strong> explored</p>
         </div>
         <div class="progress-meter" aria-hidden="true"><span id="progress-bar"></span></div>
         <dl>
@@ -127,7 +139,7 @@
       <div id="trail-list" tabindex="-1">
         <div class="table-wrap">
           <table>
-            <caption class="visually-hidden">Smokies waterfall hikes with trail, driving, status, and planning details</caption>
+            <caption class="visually-hidden">Southern Appalachian mixed-feature hikes with trail, driving, status, and planning details</caption>
             <thead><tr>
               <th scope="col"><span class="visually-hidden">Completed</span></th>
               <th scope="col">Rank / trail</th>
@@ -153,12 +165,12 @@
 
     <section class="sources" aria-labelledby="sources-title">
       <p class="eyebrow">Carry good information</p>
-      <h2 id="sources-title">Official park desk</h2>
+      <h2 id="sources-title">Official information desks</h2>
       <div class="source-grid">
-        <a href="https://www.nps.gov/grsm/planyourvisit/temproadclose.htm" target="_blank" rel="noopener noreferrer"><strong>Roads &amp; trail status</strong><span>Temporary closures, warnings, seasonal access</span></a>
-        <a href="https://www.nps.gov/grsm/planyourvisit/waterfalls.htm" target="_blank" rel="noopener noreferrer"><strong>NPS waterfall guide</strong><span>Park guidance for waterfall visits</span></a>
-        <a href="https://www.nps.gov/grsm/planyourvisit/maps.htm" target="_blank" rel="noopener noreferrer"><strong>Official maps</strong><span>Download before leaving coverage</span></a>
-        <a href="https://www.nps.gov/grsm/planyourvisit/fees.htm" target="_blank" rel="noopener noreferrer"><strong>Parking tags</strong><span>Requirements and purchase information</span></a>
+        <a href="https://www.nps.gov/grsm/planyourvisit/temproadclose.htm" target="_blank" rel="noopener noreferrer"><strong>Great Smoky Mountains</strong><span>Temporary closures, warnings, and seasonal roads</span></a>
+        <a href="https://www.nps.gov/biso/planyourvisit/conditions.htm" target="_blank" rel="noopener noreferrer"><strong>Big South Fork</strong><span>Current access and river-area conditions</span></a>
+        <a href="https://tnstateparks.com/parks/cumberland-trail" target="_blank" rel="noopener noreferrer"><strong>Tennessee State Parks</strong><span>Park information for state-managed destinations</span></a>
+        <a href="https://www.fs.usda.gov/r08/northcarolina" target="_blank" rel="noopener noreferrer"><strong>Pisgah National Forest</strong><span>Forest alerts, recreation guidance, and restrictions</span></a>
       </div>
     </section>
   </main>

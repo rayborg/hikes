@@ -1,6 +1,6 @@
-# Falling Water Field Notes
+# Highland Field Notes
 
-A no-build, local-first trail tracker for 11 waterfall hikes in Great Smoky Mountains National Park. It is plain HTML, CSS, and JavaScript designed to publish directly from a GitHub Pages repository.
+A no-build, local-first tracker for 23 mixed-feature hikes across the Southern Appalachians. The collection includes waterfalls, overlooks, summits, natural arches, gorges, a lake, historic sites, and rock formations in seven regions. It is plain HTML, CSS, and JavaScript designed to publish directly from a GitHub Pages repository.
 
 ## Local preview
 
@@ -25,21 +25,24 @@ No GitHub Actions workflow, npm package, framework, or custom domain is required
 
 ## Data and conditions
 
-- Trail records, destinations, fallback routes, YouTube search URLs, advisories, and photo metadata live in `data.js`.
-- The current status review date is `2026-07-31`. Update both `HIKES_CONFIG.statusUpdated` and individual status/advisory fields when reviewing [NPS temporary closures and warnings](https://www.nps.gov/grsm/planyourvisit/temproadclose.htm).
-- `Open / recheck` means no closure was named in the cited status review. It is not a guarantee. Visitors must recheck official conditions before departure.
-- Trail mileage and elevation figures are planning references, not survey-grade measurements. Mouse Creek displays the current temporary-access mileage separately from its base route.
+- Trail records, taxonomy, destinations, fallback routes, YouTube search URLs, advisories, manager-specific sources, and photo metadata live in `data.js`.
+- Every trail has its own status review date and links for official trail information, current status, maps, and fee or parking guidance. The original 11 Smokies records were reviewed `2026-07-31`; the 12 additions were reviewed `2026-08-02`.
+- A status such as `Open / recheck` or `No active alert listed; recheck` records what appeared in the cited review. It is not a guarantee. Visitors must recheck the per-trail official source before departure.
+- Trail mileage and all elevation-gain figures are planning estimates, not survey-grade measurements. The details view labels elevation accordingly. Mouse Creek displays the current temporary-access mileage separately from its base route.
 - Laurel Falls is retained for reference but marked closed and excluded by the open-only filter.
+- Region and feature values are controlled by `HIKES_CONFIG.regions` and `HIKES_CONFIG.features`. Their filters compose with search, drive, distance, difficulty, coolness, completion, open-only, and sorting, and are retained in the page URL.
 
 ## Routing and privacy
 
-The initial origin is `35.960, -83.920`. The page immediately displays supplied fixed-origin fallback drive estimates, then makes one matrix request for all destinations to the public OSRM demo server using OpenStreetMap data. Results have no live traffic and are cached by rounded origin for no more than six hours.
+The initial origin is `35.960, -83.920`. The page immediately displays supplied fixed-origin fallback drive estimates, then makes one matrix request for all 23 destinations to the public OSRM demo server using OpenStreetMap data. Results have no live traffic and are cached by rounded origin for no more than six hours.
+
+The route-cache key and payload include a destination-aware dataset signature derived from trail identifiers and coordinates. Catalog or coordinate changes therefore invalidate old matrices. Incomplete provider matrices may contain unavailable destinations without breaking valid results for other trails.
 
 If OSRM fails, fallback values are used only for the fixed home origin. A custom-origin failure is shown as unavailable; the application does not substitute misleading straight-line distance.
 
 Browser GPS is opt-in. Coordinates are rounded to three decimal places before routing, display, or local storage, and no precise location history is retained. A user can manually enter coordinates or reset the origin. Public OSRM receives the rounded origin and listed trailhead coordinates when route calculation runs.
 
-Completion state and the optional rounded custom origin are stored only in browser `localStorage`. JSON/CSV exports are generated locally. JSON import validates its format and known trail identifiers before replacing completion state.
+Completion state and the optional rounded custom origin are stored only in browser `localStorage`. Existing identifiers remain unchanged for compatibility: `smokies-hikes-completed-v1`, `smokies-hikes-origin-v1`, and the `smokies-hikes-routes-v1:` prefix. JSON exports retain format `smokies-hikes-completions`, version `1`; old version-1 completion exports containing the original slugs remain valid. JSON/CSV exports are generated locally, and JSON import validates its format and known trail identifiers before replacing completion state.
 
 ## Photos and external services
 
@@ -47,7 +50,7 @@ Every trail has two credited Wikimedia Commons photos. `data.js` stores the exac
 
 The application also links or sends requests to:
 
-- National Park Service pages for current conditions, maps, waterfall guidance, and parking tags
+- National Park Service, Tennessee State Parks/TDEC, USDA Forest Service, Knox County, Cumberland Trail, and Ijams pages for trail information, conditions, maps, and fees
 - `router.project-osrm.org` for optional route matrices
 - OpenStreetMap for detail maps and navigation
 - Google Maps and Apple Maps for user-initiated navigation links
@@ -70,4 +73,4 @@ node --check data.js
 node --check app.js
 ```
 
-Then preview through a local server and exercise filtering, browser back/forward from a detail view, completion reload persistence, import/export, location reset, and both desktop and mobile layouts. Remote images, route responses, maps, and external status pages depend on their respective providers and network availability.
+Then preview through a local server and exercise region/feature filtering (including URL reload and unknown URL values), combined filters, clear/reset, browser back/forward from a detail view, completion reload persistence, a version-1 import/export round trip, location reset, provider failure, and desktop/mobile/print layouts. Confirm exactly 23 unique slugs and ranks, 46 photo tuples, complete per-trail source metadata, and one 24-coordinate OSRM table request. Remote images, route responses, maps, and external status pages depend on their respective providers and network availability.
